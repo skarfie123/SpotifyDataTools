@@ -134,7 +134,7 @@ def main():
     if args.token:
         spotify = SpotifyAPI(args.token)
     else:
-        spotify = SpotifyAPI.authorize(client_id='5c098bcc800e45d49e476265bc9b6934', scope='playlist-read-private')
+        spotify = SpotifyAPI.authorize(client_id='5c098bcc800e45d49e476265bc9b6934', scope='user-library-read playlist-read-private playlist-read-collaborative')
     
     # Get the ID of the logged in user.
     me = spotify.get('me')
@@ -142,12 +142,19 @@ def main():
 
     # List all playlists and all track in each playlist.
     playlists = spotify.list('users/{user_id}/playlists'.format(user_id=me['id']), {'limit': 50})
-    #playlists = playlists[:5]
     
     for playlist in playlists:
         log('Loading playlist: {name} ({tracks[total]} songs)'.format(**playlist))
         playlist['tracks'] = spotify.list(playlist['tracks']['href'], {'limit': 100})
     
+    # Make a likes playlist
+    likes = spotify.list('users/{user_id}/tracks'.format(user_id=me['id']), {'limit': 50})
+    likes_playlist = {"id": "likes", "name": "Likes", "tracks": []}
+    for track in likes:
+        likes_playlist["tracks"].append(track)
+    playlists.append(likes_playlist)
+    log(f"Loading playlist: Likes ({len(likes)} songs)")
+
     # Write the file.
     with open(args.file, 'w', encoding='utf-8') as f:
         # JSON file.
