@@ -1,6 +1,8 @@
 spotify-backup
 ==============
 
+![GitHub top language](https://img.shields.io/github/languages/top/skarfie123/spotify-backup?style=plastic)
+
 A Python 3 script that exports all of your Spotify playlists, useful for paranoid Spotify users like me, afraid that one day Spotify will go under and take all of our playlists with it!
 
 Run the scripts from the command line:
