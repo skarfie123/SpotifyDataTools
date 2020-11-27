@@ -142,45 +142,52 @@ def main():
     for i, playlist in enumerate(playlists):
         print(i, playlist["name"], sep = "\t")
     print(len(playlists), "Likes", sep = "\t")
+    print(-1, "All", sep = "\t")
     while True:
         try:
-            chosen = int(input("Choose: "))
-            assert(chosen>=0 and chosen<=len(playlists)), "not in range"
+            chose = int(input("Choose: "))
+            assert(chose>=-1 and chose<=len(playlists)), "not in range"
             break
         except (ValueError, AssertionError):
             print("Please enter a valid integer index")
-    if chosen == len(playlists):
-        # Make a likes playlist
-        likes = spotify.list('users/{user_id}/tracks'.format(user_id=me['id']), {'limit': 50})
-        chosen_playlist = {"id": "likes", "name": "Likes", "tracks": []}
-        for track in likes:
-            chosen_playlist["tracks"].append(track)
-        log(f"Loading playlist: Likes ({len(likes)} songs)")
+    if not chose == -1:
+        chosens = [chose]
     else:
-        log('Loading playlist: {name} ({tracks[total]} songs)'.format(**playlists[chosen]))
-        playlists[chosen]['tracks'] = spotify.list(playlists[chosen]['tracks']['href'], {'limit': 100})
-        chosen_playlist = playlists[chosen]
+        chosens = [i for i in range(len(playlists)+1)]
+    for chosen in chosens:
+        if chosen == len(playlists):
+            # Make a likes playlist
+            likes = spotify.list('users/{user_id}/tracks'.format(user_id=me['id']), {'limit': 50})
+            chosen_playlist = {"id": "likes", "name": "Likes", "tracks": []}
+            for track in likes:
+                chosen_playlist["tracks"].append(track)
+            log(f"Loading playlist: Likes ({len(likes)} songs)")
+        else:
+            log('Loading playlist: {name} ({tracks[total]} songs)'.format(**playlists[chosen]))
+            playlists[chosen]['tracks'] = spotify.list(playlists[chosen]['tracks']['href'], {'limit': 100})
+            chosen_playlist = playlists[chosen]
 
-    # Write the file.
-    with open(chosen_playlist["name"]+"."+args.format, 'w', encoding='utf-8') as f:        
-        # JSON file.
-        if args.format == 'json':
-            json.dump(chosen_playlist, f)
-        
-        # Tab-separated file.
-        elif args.format == 'txt':
-            f.write(chosen_playlist['name'] + '\n')
-            for i, track in enumerate(chosen_playlist['tracks']):
-                try:
-                    f.write('{index}\t{name}\t{artists}\t{album}\n'.format(
-                        index=i,
-                        name=track['track']['name'],
-                        artists=', '.join([artist['name'] for artist in track['track']['artists']]),
-                        album=track['track']['album']['name']
-                    ))
-                except:
-                    print("Error with track: ", track)
-    log('Wrote file: ' + chosen_playlist["name"]+"."+args.format)
+        # Write the file.
+        filename = "".join([x if x.isalnum() else "_" for x in chosen_playlist["name"]])+"."+args.format
+        with open(filename, 'w', encoding='utf-8') as f:        
+            # JSON file.
+            if args.format == 'json':
+                json.dump(chosen_playlist, f)
+            
+            # Tab-separated file.
+            elif args.format == 'txt':
+                f.write(chosen_playlist['name'] + '\n')
+                for i, track in enumerate(chosen_playlist['tracks']):
+                    try:
+                        f.write('{index}\t{name}\t{artists}\t{album}\n'.format(
+                            index=i,
+                            name=track['track']['name'],
+                            artists=', '.join([artist['name'] for artist in track['track']['artists']]),
+                            album=track['track']['album']['name']
+                        ))
+                    except:
+                        print("Error with track: ", track)
+        log('Wrote file: ' + filename)
 
 if __name__ == '__main__':
     main()
