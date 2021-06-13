@@ -1,3 +1,4 @@
 *.txt
 *.json
 desktop.ini
+__pycache__/*
