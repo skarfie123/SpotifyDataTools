@@ -17,18 +17,18 @@ LIKES_PLAYLIST = "Likes"
 
 
 def load_playlist(spotify: SpotifyAPI, me, playlist):
-    logging.info(f"Loading playlist: {playlist['name']}")
     if playlist["name"] == LIKES_PLAYLIST:
         # List all liked tracks
         playlist["tracks"] = spotify.list(
             "users/{user_id}/tracks".format(user_id=me["id"]), {"limit": 50}
         )
+        logging.info(f"Loaded {playlist['name']} ({len(playlist['tracks'])} songs)")
     else:
         # List all tracks in playlist
+        logging.info(
+            f"Loading playlist: {playlist['name']} ({playlist['tracks']['total']} songs)"
+        )
         playlist["tracks"] = spotify.list(playlist["tracks"]["href"], {"limit": 100})
-    logging.info(
-        f"Loaded playlist: {playlist['name']} ({len(playlist['tracks'])} songs)"
-    )
 
 
 def write_playlist(f: TextIOWrapper, playlist):
@@ -97,7 +97,13 @@ def main():
         action="store_true",
         help="dump all chosen playlists into single file (default: False)",
     )
-    parser.set_defaults(single=False)
+    parser.add_argument(
+        "--mine",
+        dest="mine",
+        action="store_true",
+        help="save only playlists owned by you (default: False)",
+    )
+    parser.set_defaults(single=False, mine=False)
     parser.add_argument("file", help="output filename for single file mode", nargs="?")
     args = parser.parse_args()
 
@@ -128,6 +134,10 @@ def main():
             "users/{user_id}/playlists".format(user_id=me["id"]), {"limit": 50}
         )
         logging.info(f"Found {len(playlist_data)} playlists")
+
+        if args.mine:
+            playlist_data = [p for p in playlist_data if p["owner"]["id"] == me["id"]]
+
         playlists += playlist_data
 
     if not args.single:
