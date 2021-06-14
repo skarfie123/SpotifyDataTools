@@ -1,16 +1,17 @@
 #!/usr/bin/env python3
 
 import argparse
-from io import TextIOWrapper
 import json
 import logging
 import os
+from io import TextIOWrapper
+
 import click
+import coloredlogs
+
 from spotify_api import SpotifyAPI
 
-logging.basicConfig(
-    level=20, datefmt="%I:%M:%S", format="[%(asctime)s] \x1b[91m%(message)s\x1b[0m"
-)
+coloredlogs.install(datefmt="%I:%M:%S", fmt="[%(asctime)s] %(levelname)s %(message)s")
 
 LIKES_PLAYLIST = "Likes"
 
@@ -78,6 +79,11 @@ def main():
         default="likes,playlists",
         choices=["likes,playlists", "playlists,likes", "playlists", "likes"],
         help="dump playlists or likes, or both (default: playlists)",
+    )
+    parser.add_argument(
+        "--folder",
+        default="backup",
+        help="folder to save each file (default: backup)",
     )
     parser.add_argument(
         "--format",
@@ -169,8 +175,12 @@ def main():
 
                     f.write("\n")
     else:
+        os.makedirs(args.folder, exist_ok=True)
+
         for playlist in playlists:
-            filename = playlist_filename(playlist, args.format)
+            filename = os.path.join(
+                args.folder, playlist_filename(playlist, args.format)
+            )
 
             if not confirm_overwrite(filename):
                 continue
