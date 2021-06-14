@@ -4,9 +4,13 @@ import argparse
 from io import TextIOWrapper
 import json
 import logging
+import os
+import click
 from spotify_api import SpotifyAPI
 
-logging.basicConfig(level=20, datefmt="%I:%M:%S", format="[%(asctime)s] %(message)s")
+logging.basicConfig(
+    level=20, datefmt="%I:%M:%S", format="[%(asctime)s] \x1b[91m%(message)s\x1b[0m"
+)
 
 LIKES_PLAYLIST = "Likes"
 
@@ -50,6 +54,12 @@ def playlist_filename(playlist, format: str):
     return "".join([x if x.isalnum() else "_" for x in playlist["name"]]) + "." + format
 
 
+def confirm_overwrite(filename):
+    return not os.path.exists(filename) or click.confirm(
+        f"{filename} already exists, do you want to overwrite?"
+    )
+
+
 def main():
     # Parse arguments.
     parser = argparse.ArgumentParser(
@@ -81,7 +91,7 @@ def main():
         action="store_true",
         help="dump all chosen playlists into single file (default: False)",
     )
-    parser.set_defaults(single=True)
+    parser.set_defaults(single=False)
     parser.add_argument("file", help="output filename for single file mode", nargs="?")
     args = parser.parse_args()
 
@@ -130,16 +140,22 @@ def main():
                 print("Please enter a valid integer index")
 
         if choice != -1:
-            playlists = playlists[choice]
-
-    for playlist in playlists:
-        load_playlist(spotify, me, playlist)
+            playlists = [playlists[choice]]
 
     if args.single:
+        if args.file and not confirm_overwrite(args.file):
+            args.file = None
+
         # If they didn't give a filename, then just prompt them.
         while not args.file:
             args.file = input("Enter a file name (e.g. playlists.txt): ")
             args.format = args.file.split(".")[-1]
+
+            if args.file and not confirm_overwrite(args.file):
+                args.file = None
+
+        for playlist in playlists:
+            load_playlist(spotify, me, playlist)
 
         with open(args.file, "w", encoding="utf-8") as f:
             logging.info("Writing file: " + f.name)
@@ -155,6 +171,11 @@ def main():
     else:
         for playlist in playlists:
             filename = playlist_filename(playlist, args.format)
+
+            if not confirm_overwrite(filename):
+                continue
+
+            load_playlist(spotify, me, playlist)
 
             with open(filename, "w", encoding="utf-8") as f:
                 logging.info("Writing file: " + f.name)
