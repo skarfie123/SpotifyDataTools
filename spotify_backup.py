@@ -87,7 +87,7 @@ def confirm_overwrite(filename: str, yes: bool = False):
 
 def parse_choices(choices):
     choice_ranges = (x.split("-") for x in choices.split(","))
-    choice_list = [i for r in choice_ranges for i in range(int(r[0]) - 1, int(r[-1]))]
+    choice_list = [i for r in choice_ranges for i in range(int(r[0]), int(r[-1]) + 1)]
     return choice_list
 
 
@@ -184,25 +184,24 @@ def main():
 
         playlists += playlist_data
 
-    if not args.single:
-        # list available choices
-        for i, playlist in enumerate(playlists):
-            print(i, playlist["name"], sep="\t")
-        print(-1, "All", sep="\t")
+    # list available choices
+    for i, playlist in enumerate(playlists):
+        print(i, playlist["name"], sep="\t")
+    print(-1, "All", sep="\t")
 
-        # prompt for choices
-        while True:
-            try:
-                choices = parse_choices(input("Choose: "))
-                assert all(
-                    choice >= -1 and choice < len(playlists) for choice in choices
-                ), "not in range"
-                break
-            except (ValueError, AssertionError):
-                print("Please enter a valid integer indices")
+    # prompt for choices
+    while True:
+        try:
+            choices = parse_choices(input("Choose: "))
+            assert all(
+                choice >= -1 and choice < len(playlists) for choice in choices
+            ), "not in range"
+            break
+        except (ValueError, AssertionError):
+            print("Please enter a valid integer indices")
 
-        if -1 not in choices:
-            playlists = [playlists[choice] for choice in choices]
+    if -1 not in choices:
+        playlists = [playlists[choice] for choice in choices]
 
     if args.single:
         if args.file and not confirm_overwrite(args.file, args.yes):
