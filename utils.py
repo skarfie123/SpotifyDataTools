@@ -19,16 +19,16 @@ def parse_choices(choices):
 
 
 def get_playlists(
-    spotify: SpotifyAPI, me, dump: str = "likes,playlists", mine: bool = False
+    spotify: SpotifyAPI, me, include: str = "likes,playlists", mine: bool = False
 ) -> list:
     playlists = []
 
     # Add Likes playlist
-    if "likes" in dump:
+    if "likes" in include:
         playlists += [{"id": "likes", "name": LIKES_PLAYLIST, "tracks": []}]
 
     # List all playlists and the tracks in each playlist
-    if "playlists" in dump:
+    if "playlists" in include:
         logging.info("Loading playlists...")
         playlist_data = spotify.list(
             "users/{user_id}/playlists".format(user_id=me["id"]), {"limit": 50}

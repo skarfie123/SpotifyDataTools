@@ -8,7 +8,7 @@ from io import TextIOWrapper
 
 import click
 
-from constants import LIKES_PLAYLIST, CLIENT_ID
+from constants import CLIENT_ID
 from spotify_api import SpotifyAPI
 import utils
 
@@ -71,10 +71,10 @@ def confirm_overwrite(filename: str, yes: bool = False):
 def parse_args():
     parser = argparse.ArgumentParser(description="Exports your Spotify playlists.")
     parser.add_argument(
-        "--dump",
+        "--include",
         default="likes,playlists",
         choices=["likes,playlists", "playlists,likes", "playlists", "likes"],
-        help="dump playlists or likes, or both (default: playlists)",
+        help="include playlists or likes, or both (default: playlists)",
     )
     parser.add_argument(
         "--folder",
@@ -132,7 +132,7 @@ def main():
     me = spotify.get("me")
     logging.info("Logged in as {display_name} ({id})".format(**me))
 
-    playlists = utils.get_playlists(spotify, me, args.dump, args.mine)
+    playlists = utils.get_playlists(spotify, me, args.include, args.mine)
 
     playlists = utils.choose_playlists(playlists)
 

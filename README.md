@@ -31,7 +31,7 @@ or, to get a JSON dump, use:
 
 By default, it includes your playlists and Likes. To include only your playlists, you can use:
 
-`python spotify_backup.py --dump=playlists`
+`python spotify_backup.py --include=playlists`
 
 By default, it creates a file for each playlist, but you can dump to a single file:
 
