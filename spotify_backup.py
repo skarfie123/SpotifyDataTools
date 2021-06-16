@@ -5,31 +5,14 @@ import json
 import logging
 import os
 from io import TextIOWrapper
-from ssl import wrap_socket
 
 import click
-import coloredlogs
 
+from constants import LIKES_PLAYLIST, CLIENT_ID
 from spotify_api import SpotifyAPI
+import utils
 
-coloredlogs.install(datefmt="%I:%M:%S", fmt="[%(asctime)s] %(levelname)s %(message)s")
-
-LIKES_PLAYLIST = "Likes"
-
-
-def load_playlist(spotify: SpotifyAPI, me, playlist):
-    if playlist["name"] == LIKES_PLAYLIST:
-        # List all liked tracks
-        playlist["tracks"] = spotify.list(
-            "users/{user_id}/tracks".format(user_id=me["id"]), {"limit": 50}
-        )
-        logging.info(f"Loaded {playlist['name']} ({len(playlist['tracks'])} songs)")
-    else:
-        # List all tracks in playlist
-        logging.info(
-            f"Loading playlist: {playlist['name']} ({playlist['tracks']['total']} songs)"
-        )
-        playlist["tracks"] = spotify.list(playlist["tracks"]["href"], {"limit": 100})
+utils.setup_logging()
 
 
 def write_playlist(f: TextIOWrapper, playlist):
@@ -85,25 +68,8 @@ def confirm_overwrite(filename: str, yes: bool = False):
     )
 
 
-def parse_choices(choices):
-    choice_ranges = (x.split("-") for x in choices.split(","))
-    choice_list = [i for r in choice_ranges for i in range(int(r[0]), int(r[-1]) + 1)]
-    return choice_list
-
-
-def main():
-    # Parse arguments.
-    parser = argparse.ArgumentParser(
-        description="Exports your Spotify playlists. By default, opens a browser window "
-        + "to authorize the Spotify Web API, but you can also manually specify"
-        + " an OAuth token with the --token option."
-    )
-    parser.add_argument(
-        "--token",
-        metavar="OAUTH_TOKEN",
-        help="use a Spotify OAuth token (requires the "
-        + "`playlist-read-private` permission)",
-    )
+def parse_args():
+    parser = argparse.ArgumentParser(description="Exports your Spotify playlists.")
     parser.add_argument(
         "--dump",
         default="likes,playlists",
@@ -149,59 +115,26 @@ def main():
     )
     parser.set_defaults(single=False, mine=False, checkDuplicates=False, yes=False)
     parser.add_argument("file", help="output filename for single file mode", nargs="?")
-    args = parser.parse_args()
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
 
     # Log into the Spotify API.
-    if args.token:
-        spotify = SpotifyAPI(args.token)
-    else:
-        spotify = SpotifyAPI.authorize(
-            client_id="5c098bcc800e45d49e476265bc9b6934",
-            scope="user-library-read playlist-read-private playlist-read-collaborative",
-        )
+    spotify = SpotifyAPI.authorize(
+        client_id=CLIENT_ID,
+        scope="user-library-read playlist-read-private playlist-read-collaborative",
+    )
 
     # Get the ID of the logged in user.
     logging.info("Loading user info...")
     me = spotify.get("me")
     logging.info("Logged in as {display_name} ({id})".format(**me))
 
-    playlists = []
+    playlists = utils.get_playlists(spotify, me, args.dump, args.mine)
 
-    # Add Likes playlist
-    if "likes" in args.dump:
-        playlists += [{"id": "likes", "name": LIKES_PLAYLIST, "tracks": []}]
-
-    # List all playlists and the tracks in each playlist
-    if "playlists" in args.dump:
-        logging.info("Loading playlists...")
-        playlist_data = spotify.list(
-            "users/{user_id}/playlists".format(user_id=me["id"]), {"limit": 50}
-        )
-        logging.info(f"Found {len(playlist_data)} playlists")
-
-        if args.mine:
-            playlist_data = [p for p in playlist_data if p["owner"]["id"] == me["id"]]
-
-        playlists += playlist_data
-
-    # list available choices
-    for i, playlist in enumerate(playlists):
-        print(i, playlist["name"], sep="\t")
-    print(-1, "All", sep="\t")
-
-    # prompt for choices
-    while True:
-        try:
-            choices = parse_choices(input("Choose: "))
-            assert all(
-                choice >= -1 and choice < len(playlists) for choice in choices
-            ), "not in range"
-            break
-        except (ValueError, AssertionError):
-            print("Please enter a valid integer indices")
-
-    if -1 not in choices:
-        playlists = [playlists[choice] for choice in choices]
+    playlists = utils.choose_playlists(playlists)
 
     if args.single:
         if args.file and not confirm_overwrite(args.file, args.yes):
@@ -216,7 +149,7 @@ def main():
                 args.file = None
 
         for playlist in playlists:
-            load_playlist(spotify, me, playlist)
+            utils.load_playlist(spotify, me, playlist)
 
         with open(args.file, "w", encoding="utf-8") as f:
             logging.info("Writing file: " + f.name)
@@ -240,7 +173,7 @@ def main():
             if not confirm_overwrite(filename, args.yes):
                 continue
 
-            load_playlist(spotify, me, playlist)
+            utils.load_playlist(spotify, me, playlist)
 
             with open(filename, "w", encoding="utf-8") as f:
                 logging.info("Writing file: " + f.name)

@@ -20,6 +20,10 @@ class SpotifyAPI:
 
     # Gets a resource from the Spotify API and returns the object.
     def get(self, url, params={}, tries=3):
+        return self.post(url, params=params, tries=tries)
+
+    # Post is like Get but with a body for data
+    def post(self, url, params={}, data={}, tries=3):
         # Construct the correct URL.
         if not url.startswith("https://api.spotify.com/v1/"):
             url = "https://api.spotify.com/v1/" + url
@@ -31,7 +35,13 @@ class SpotifyAPI:
             try:
                 req = urllib.request.Request(url)
                 req.add_header("Authorization", "Bearer " + self._auth)
-                res = urllib.request.urlopen(req)
+                if data:
+                    req.add_header("Content-Type", "application/json")
+                    res = urllib.request.urlopen(
+                        req, json.JSONEncoder().encode(data).encode("ascii")
+                    )
+                else:
+                    res = urllib.request.urlopen(req)
                 reader = codecs.getreader("utf-8")
                 return json.load(reader(res))
             except Exception as err:
