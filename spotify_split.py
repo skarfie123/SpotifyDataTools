@@ -1,4 +1,5 @@
 import argparse
+from datetime import datetime
 import logging
 
 from constants import ALBUM_TYPE_COMPILATIONS, CLIENT_ID
@@ -7,17 +8,20 @@ import utils
 
 utils.setup_logging()
 
+SPLIT_MODE_DATE_ADDED = "date-added"
+SPLIT_MODE_RELEASE_DATE = "release-date"
+
 
 def parse_args():
     parser = argparse.ArgumentParser(
         description="Splits your playlist by the specified characteristic."
     )
-    # parser.add_argument(
-    #     "--mode",
-    #     default="release-date",
-    #     choices=["release-date", "date-added"],
-    #     help="output format (default: txt)",
-    # )
+    parser.add_argument(
+        "--mode",
+        default=SPLIT_MODE_RELEASE_DATE,
+        choices=[SPLIT_MODE_RELEASE_DATE, SPLIT_MODE_DATE_ADDED],
+        help=f"output format (default: {SPLIT_MODE_RELEASE_DATE})",
+    )
     parser.add_argument(
         "--sc",
         "--separate-compilations",
@@ -56,9 +60,24 @@ def main():
 
     new_playlists = {}
 
+    if args.mode == SPLIT_MODE_RELEASE_DATE:
+        split_release_date(
+            spotify, me, playlist, new_playlists, args.separateCompilations
+        )
+    elif args.mode == SPLIT_MODE_DATE_ADDED:
+        split_date_added(spotify, me, playlist, new_playlists)
+
+    for playlist_name in sorted(new_playlists.keys()):
+        utils.create_playlist(spotify, me, playlist_name, new_playlists[playlist_name])
+
+
+def split_release_date(
+    spotify: SpotifyAPI, me, playlist, new_playlists: dict, separateCompilations: bool
+):
+
     for t in playlist["tracks"]:
         if (
-            args.separateCompilations
+            separateCompilations
             and t["track"]["album"]["album_type"] == ALBUM_TYPE_COMPILATIONS
         ):
             name = new_playlist_name(playlist, ALBUM_TYPE_COMPILATIONS)
@@ -77,8 +96,18 @@ def main():
         else:
             new_playlists[name] = [t]
 
-    for playlist_name in sorted(new_playlists.keys()):
-        utils.create_playlist(spotify, me, playlist_name, new_playlists[playlist_name])
+
+def split_date_added(spotify: SpotifyAPI, me, playlist, new_playlists: dict):
+
+    for t in playlist["tracks"]:
+        time = t["added_at"]
+        year = datetime.fromisoformat(time.removesuffix("Z")).year
+        name = f"added{year}"
+        name = new_playlist_name(playlist, name)
+        if name in new_playlists:
+            new_playlists[name].append(t)
+        else:
+            new_playlists[name] = [t]
 
 
 if __name__ == "__main__":
