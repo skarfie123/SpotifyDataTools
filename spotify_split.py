@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import argparse
-import logging
 from datetime import datetime
 
 import utils
@@ -60,19 +59,15 @@ def main():
     new_playlists = {}
 
     if args.mode == SPLIT_MODE_RELEASE_DATE:
-        split_release_date(
-            spotify, me, playlist, new_playlists, args.separateCompilations
-        )
+        split_release_date(playlist, new_playlists, args.separateCompilations)
     elif args.mode == SPLIT_MODE_DATE_ADDED:
-        split_date_added(spotify, me, playlist, new_playlists)
+        split_date_added(playlist, new_playlists)
 
     for playlist_name in sorted(new_playlists.keys()):
         utils.create_playlist(spotify, me, playlist_name, new_playlists[playlist_name])
 
 
-def split_release_date(
-    spotify: SpotifyAPI, me, playlist, new_playlists: dict, separateCompilations: bool
-):
+def split_release_date(playlist, new_playlists: dict, separateCompilations: bool):
 
     for t in playlist["tracks"]:
         if (
@@ -96,7 +91,7 @@ def split_release_date(
             new_playlists[name] = [t]
 
 
-def split_date_added(spotify: SpotifyAPI, me, playlist, new_playlists: dict):
+def split_date_added(playlist, new_playlists: dict):
 
     for t in playlist["tracks"]:
         time = t["added_at"]

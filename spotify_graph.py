@@ -99,7 +99,7 @@ def main():
             plt.savefig(filename)
             logging.info(f"Saved {filename}")
 
-    if not args.show:
+    if not args.save:
         plt.show()
 
 
@@ -128,14 +128,14 @@ def plot_release_date(playlist, excludeCompilations: bool):
             decades[decade] = 1
 
     plt.bar(
-        [d for d in sorted(decades.keys())],
+        sorted(decades.keys()),
         [decades[d] for d in sorted(decades.keys())],
         width=10,
         label=f"Per Decade ({'Exc.' if excludeCompilations else 'Inc.'} Compilations)",
         zorder=1,
     )
     plt.bar(
-        [y for y in sorted(years.keys())],
+        sorted(years.keys()),
         [years[y] for y in sorted(years.keys())],
         label=f"Per Year ({'Exc.' if excludeCompilations else 'Inc.'} Compilations)",
         zorder=2,
@@ -162,7 +162,7 @@ def plot_date_added(playlist, excludeCompilations: bool):
             years[year] = 1
 
     plt.bar(
-        [d for d in sorted(years.keys())],
+        sorted(years.keys()),
         [years[d] for d in sorted(years.keys())],
         width=1,
         label=f"{'Exc.' if excludeCompilations else 'Inc.'} Compilations",
