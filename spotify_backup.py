@@ -8,9 +8,9 @@ from io import TextIOWrapper
 
 import click
 
+import utils
 from constants import CLIENT_ID
 from spotify_api import SpotifyAPI
-import utils
 
 utils.setup_logging()
 
@@ -127,10 +127,7 @@ def main():
         scope="user-library-read playlist-read-private playlist-read-collaborative",
     )
 
-    # Get the ID of the logged in user.
-    logging.info("Loading user info...")
-    me = spotify.get("me")
-    logging.info("Logged in as {display_name} ({id})".format(**me))
+    me = utils.login(spotify)
 
     playlists = utils.get_playlists(spotify, me, args.include, args.mine)
 

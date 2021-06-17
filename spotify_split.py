@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 import argparse
-from datetime import datetime
 import logging
+from datetime import datetime
 
+import utils
 from constants import ALBUM_TYPE_COMPILATIONS, CLIENT_ID
 from spotify_api import SpotifyAPI
-import utils
 
 utils.setup_logging()
 
@@ -29,7 +29,7 @@ def parse_args():
         "--separate-compilations",
         dest="separateCompilations",
         action="store_true",
-        help="split compilations into separate playlist, because compilations have misleading release-dates (default: False)",
+        help="split songs from compilations into separate playlist, because compilations have misleading release-dates (default: False)",
     )
     parser.set_defaults(separateCompilations=False)
     return parser.parse_args()
@@ -49,10 +49,7 @@ def main():
         scope="user-library-read playlist-read-private playlist-read-collaborative playlist-modify-private",
     )
 
-    # Get the ID of the logged in user.
-    logging.info("Loading user info...")
-    me = spotify.get("me")
-    logging.info("Logged in as {display_name} ({id})".format(**me))
+    me = utils.login(spotify)
 
     playlists = utils.get_playlists(spotify, me)
 

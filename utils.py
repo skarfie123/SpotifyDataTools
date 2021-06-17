@@ -12,6 +12,14 @@ def setup_logging():
     )
 
 
+def login(spotify: SpotifyAPI):
+    # Get the ID of the logged in user.
+    logging.info("Loading user info...")
+    me = spotify.get("me")
+    logging.info("Logged in as {display_name} ({id})".format(**me))
+    return me
+
+
 def parse_choices(choices):
     choice_ranges = (x.split("-") for x in choices.split(","))
     choice_list = [i for r in choice_ranges for i in range(int(r[0]), int(r[-1]) + 1)]
@@ -87,15 +95,19 @@ def choose_playlists(playlists):
     # prompt for choices
     while True:
         try:
-            choices = parse_choices(input("Choose: "))
+            choices = input("Choose: ")
+            if choices.strip() == "-1":
+                choices = None
+                break
+            choices = parse_choices(choices)
             assert all(
-                choice >= -1 and choice < len(playlists) for choice in choices
+                choice >= 0 and choice < len(playlists) for choice in choices
             ), "not in range"
             break
         except (ValueError, AssertionError):
             print("Please enter a valid integer indices")
 
-    if -1 not in choices:
+    if choices:
         playlists = [playlists[choice] for choice in choices]
 
     return playlists
