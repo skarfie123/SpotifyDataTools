@@ -51,10 +51,16 @@ Split a playlist by decade:
 
 `python spotify_backup.py`
 
-Separate compilations (because their release dates are misleading):
+Separate songs from compilations (because their release dates are misleading):
 
 `python spotify_backup.py --separate-compilations`
 
 Split by year added:
 
 `python spotify_backup.py --mode date-added`
+
+## Graph
+
+Plot a few graphs using data from your playlist(s):
+
+`python spotify_graph.py`
