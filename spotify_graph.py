@@ -3,6 +3,7 @@
 import argparse
 import logging
 from datetime import datetime
+from spotify_backup import confirm_overwrite
 
 import matplotlib.pyplot as plt
 
@@ -42,7 +43,20 @@ def parse_args():
         action="store_true",
         help="show only playlists owned by you (default: False)",
     )
-    parser.set_defaults(mine=False)
+    parser.add_argument(
+        "--save",
+        dest="save",
+        action="store_true",
+        help="save the plots as images (default: False)",
+    )
+    parser.add_argument(
+        "-y",
+        "--yes",
+        dest="yes",
+        action="store_true",
+        help="say yes to all overwrite confirmations (default: False)",
+    )
+    parser.set_defaults(mine=False, save=False, yes=False)
     return parser.parse_args()
 
 
@@ -79,7 +93,14 @@ def main():
             plot(playlist, excludeCompilations=False)
         if args.compilations in [GRAPH_COMPILATIONS_BOTH, GRAPH_COMPILATIONS_EXCLUDE]:
             plot(playlist, excludeCompilations=True)
-    plt.show()
+
+        filename = f"{playlist['name'].replace(' ', '_')}_{plot.__name__}.png"
+        if args.save and confirm_overwrite(filename, args.yes):
+            plt.savefig(filename)
+            logging.info(f"Saved {filename}")
+
+    if not args.show:
+        plt.show()
 
 
 def plot_release_date(playlist, excludeCompilations: bool):

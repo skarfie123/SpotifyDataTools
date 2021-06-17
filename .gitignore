@@ -3,3 +3,4 @@
 desktop.ini
 __pycache__/
 env/
+*.png
